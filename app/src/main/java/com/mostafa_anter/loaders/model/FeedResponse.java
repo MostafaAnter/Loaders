@@ -6,7 +6,7 @@ import java.util.List;
  * Created by mostafa_anter on 2/25/17.
  */
 
-public class FeedResonse {
+public class FeedResponse {
     private List<FeedItem> feed = null;
 
     public List<FeedItem> getFeed() {

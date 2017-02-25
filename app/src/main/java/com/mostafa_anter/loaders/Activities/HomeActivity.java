@@ -2,17 +2,21 @@ package com.mostafa_anter.loaders.Activities;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
 import com.mostafa_anter.loaders.R;
 import com.mostafa_anter.loaders.R2;
 import com.mostafa_anter.loaders.adapters.FeedAdapter;
+import com.mostafa_anter.loaders.loaders.FeedAsyncTaskLoader;
 import com.mostafa_anter.loaders.model.FeedItem;
 
 import java.util.ArrayList;
@@ -83,6 +87,7 @@ public class HomeActivity extends AppCompatActivity {
 
 
         // i think here is best place to initiate loader
+        getSupportLoaderManager().initLoader(0, null, mLoaderCallbacks);
     }
 
     public void setRecyclerViewLayoutManager(LayoutManagerType layoutManagerType) {
@@ -111,4 +116,36 @@ public class HomeActivity extends AppCompatActivity {
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.scrollToPosition(scrollPosition);
     }
+
+    // Our Callbacks. Could also have the Activity/Fragment implement
+    // LoaderManager.LoaderCallbacks<List<String>>
+    private LoaderManager.LoaderCallbacks<List<FeedItem>>
+            mLoaderCallbacks =
+            new LoaderManager.LoaderCallbacks<List<FeedItem>>() {
+                @Override
+                public Loader<List<FeedItem>> onCreateLoader(
+                        int id, Bundle args) {
+                    return new FeedAsyncTaskLoader(HomeActivity.this);
+                }
+                @Override
+                public void onLoadFinished(
+                        Loader<List<FeedItem>> loader, List<FeedItem> data) {
+                    // Display our data, for instance updating our adapter
+                    if (data != null) {
+                        mDataset.addAll(data);
+                        mAdapter.notifyDataSetChanged();
+                    }
+                    progressBar.setVisibility(View.GONE);
+                }
+                @Override
+                public void onLoaderReset(Loader<List<FeedItem>> loader) {
+                    // Loader reset, throw away our data,
+                    // unregister any listeners, etc.
+                    mDataset = null;
+                    // Of course, unless you use destroyLoader(),
+                    // this is called when everything is already dying
+                    // so a completely empty onLoaderReset() is
+                    // totally acceptable
+                }
+            };
 }

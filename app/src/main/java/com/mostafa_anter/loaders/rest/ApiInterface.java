@@ -1,6 +1,6 @@
 package com.mostafa_anter.loaders.rest;
 
-import com.mostafa_anter.loaders.model.FeedResonse;
+import com.mostafa_anter.loaders.model.FeedResponse;
 
 import retrofit2.http.GET;
 import rx.Observable;
@@ -11,6 +11,6 @@ import rx.Observable;
 
 public interface ApiInterface {
     @GET("feed/feed.json")
-    Observable<FeedResonse> getFeeds();
+    Observable<FeedResponse> getFeeds();
 
 }
