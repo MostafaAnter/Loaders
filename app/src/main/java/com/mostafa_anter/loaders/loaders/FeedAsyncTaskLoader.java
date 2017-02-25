@@ -11,7 +11,14 @@ import com.mostafa_anter.loaders.rest.ApiClient;
 import com.mostafa_anter.loaders.rest.ApiInterface;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import rx.Observable;
@@ -29,7 +36,8 @@ public class FeedAsyncTaskLoader extends
 
     private List<FeedItem> mData;
     private static final String FILE_NAME = "feed_file";
-    private FileObserver mFileObserver;
+    private File downloadedFile = new File(
+            getContext().getFilesDir(), FILE_NAME);
 
     // for retrofit request
     private Subscription subscription;
@@ -44,31 +52,13 @@ public class FeedAsyncTaskLoader extends
 
     @Override
     protected void onStartLoading() {
+        mData = readObjectsFromFile(downloadedFile);
         if (mData != null){
             // use cashed data
             deliverResult(mData);
         }
-        if (mFileObserver == null) {
-            String path = new File(
-                    getContext().getFilesDir(), FILE_NAME).getPath();
-            mFileObserver = new FileObserver(path) {
-                @Override
-                public void onEvent(int event, String path) {
-                    // Notify the loader to reload the data
-                    onContentChanged();
-                    // If the loader is started, this will kick off
-                    // loadInBackground() immediately. Otherwise,
-                    // the fact that something changed will be cached
-                    // and can be later retrieved via takeContentChanged()
-                }
-            };
-            mFileObserver.startWatching();
-        }
-        if (takeContentChanged() || mData == null) {
-            // Something has changed or we have no data,
-            // so kick off loading it
-            forceLoad();
-        }
+
+        forceLoad();
     }
 
     @Override
@@ -93,17 +83,10 @@ public class FeedAsyncTaskLoader extends
                     public void onNext(FeedResponse feedResponse) {
                         mData = feedResponse.getFeed();
                         deliverResult(mData);
-                        File downloadedFile = new File(
-                                getContext().getFilesDir(), FILE_NAME);
 
-//                        try {
-//                            FileOutputStream outputStream =
-//                                    new FileOutputStream(downloadedFile);
-//                            outputStream.write(string.getBytes());
-//                            outputStream.close();
-//                        } catch (Exception e) {
-//                            e.printStackTrace();
-//                        }
+                        deleteFileContent(downloadedFile);
+                        saveObjectsInsideFile(downloadedFile, mData);
+
 
                     }
                 });
@@ -122,20 +105,49 @@ public class FeedAsyncTaskLoader extends
         super.deliverResult(data);
     }
 
-    @Override
-    public void onContentChanged() {
-        super.onContentChanged();
-        if (mData != null){
-            // use cashed data
-            deliverResult(mData);
+    protected void onReset() {
+
+    }
+
+    private static void deleteFileContent(File file){
+        try {
+            PrintWriter writer = new PrintWriter(file);
+            writer.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
-    protected void onReset() {
-        // Stop watching for file changes
-        if (mFileObserver != null) {
-            mFileObserver.stopWatching();
-            mFileObserver = null;
+    private <T> void saveObjectsInsideFile(File file, List<T> items){
+        try {
+            FileOutputStream outStream = new FileOutputStream(file);
+            ObjectOutputStream objectOutStream = new ObjectOutputStream(outStream);
+            objectOutStream.writeInt(items.size()); // Save size first
+            for(T item:items)
+                objectOutStream.writeObject(item);
+            objectOutStream.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static <T> List<T> readObjectsFromFile(File file){
+        try {
+            FileInputStream inStream = new FileInputStream(file);
+            ObjectInputStream objectInStream = new ObjectInputStream(inStream);
+            int count = objectInStream.readInt(); // Get the number of regions
+            List<T> items = new ArrayList<>();
+            for (int c=0; c < count; c++)
+                items.add((T) objectInStream.readObject());
+            objectInStream.close();
+            return items;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

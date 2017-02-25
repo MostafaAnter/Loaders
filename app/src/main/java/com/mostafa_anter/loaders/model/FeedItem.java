@@ -1,10 +1,12 @@
 package com.mostafa_anter.loaders.model;
 
+import java.io.Serializable;
+
 /**
  * Created by mostafa_anter on 2/25/17.
  */
 
-public class FeedItem {
+public class FeedItem implements Serializable{
     private int id;
     private String name, status, image, profilePic, timeStamp, url;
 
